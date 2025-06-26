@@ -1,6 +1,6 @@
 {
   "name": "booking-journey-monorepo",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
   "scripts": {
@@ -8,7 +8,9 @@
     "dev": "concurrently \"npm run serve:api-gateway\" \"npm run serve:search-service\" \"npm run serve:availability-service\" \"npm run serve:content-service\" \"npm run serve:order-service\" \"npm run serve:customer-service\" \"npm run serve:frontend\"",
     "docker:build": "docker-compose build",
     "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
     "docker:up": "docker-compose up -d",
+    "seed:db": "docker-compose exec postgres psql -U postgres -d booking_journey -f /docker-entrypoint-initdb.d/01-seed-data.sql",
     "serve:api-gateway": "nx serve api-gateway",
     "serve:availability-service": "nx serve availability-service",
     "serve:content-service": "nx serve content-service",
@@ -16,7 +18,9 @@
     "serve:frontend": "nx serve frontend",
     "serve:order-service": "nx serve order-service",
     "serve:search-service": "nx serve search-service",
-    "test": "nx test"
+    "test": "nx test",
+    "test:e2e": "cd apps/frontend && npm run test:e2e",
+    "test:e2e:ui": "cd apps/frontend && npm run test:e2e:ui"
   },
   "dependencies": {
     "@booking-journey/shared": "latest",
@@ -34,6 +38,7 @@
     "@nestjs/swagger": "latest",
     "@nestjs/typeorm": "latest",
     "@nestjs/websockets": "latest",
+    "@playwright/test": "latest",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",

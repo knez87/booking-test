@@ -12,13 +12,23 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/seed-data.sql:/docker-entrypoint-initdb.d/01-seed-data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Redis for caching
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # API Gateway
   api-gateway:
@@ -41,13 +51,25 @@ services:
       - CUSTOMER_SERVICE_HOST=customer-service
       - CUSTOMER_SERVICE_PORT=3005
     depends_on:
-      - postgres
-      - redis
-      - search-service
-      - availability-service
-      - content-service
-      - order-service
-      - customer-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      search-service:
+        condition: service_started
+      availability-service:
+        condition: service_started
+      content-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Search Service
   search-service:
@@ -65,7 +87,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=booking_journey
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Availability Service
   availability-service:
@@ -85,8 +108,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   # Content Service
   content-service:
@@ -104,7 +129,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=booking_journey
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Order Service
   order-service:
@@ -122,7 +148,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=booking_journey
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Customer Service
   customer-service:
@@ -140,7 +167,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=booking_journey
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   # Frontend
   frontend:
@@ -153,7 +181,8 @@ services:
       - REACT_APP_API_URL=http://localhost:3000/api
       - REACT_APP_API_KEY=demo-api-key
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
 
 volumes:
   postgres_data:
