@@ -1,11 +1,14 @@
 import { Injectable } from "@nestjs/common"
-import type { Repository } from "typeorm"
-import type { VenueEntity } from "./entities/venue.entity"
+import { InjectRepository } from "@nestjs/typeorm"
+import { Repository } from "typeorm"
+import { VenueEntity } from "./entities/venue.entity"
 import type { VenueSearchParams, Venue, PaginatedResponse } from "@booking-journey/shared/types"
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly venueRepository: Repository<VenueEntity>) {}
+  constructor(
+    private readonly venueRepository: Repository<VenueEntity>,
+  ) {}
 
   async searchVenues(params: VenueSearchParams): Promise<PaginatedResponse<Venue>> {
     const { lat, lng, radius = 5000, limit = 20, offset = 0 } = params
@@ -14,7 +17,7 @@ export class SearchService {
     const latitude = Number.parseFloat(lat)
     const longitude = Number.parseFloat(lng)
 
-    // Using Haversine formula for distance calculation
+    // Using Haversine formula for distance calculation in PostgreSQL
     const query = this.venueRepository
       .createQueryBuilder("venue")
       .select([
@@ -26,7 +29,10 @@ export class SearchService {
       .limit(limit)
       .offset(offset)
 
-    const [venues, total] = await Promise.all([query.getRawMany(), query.getCount()])
+    const [venues, total] = await Promise.all([
+      query.getRawMany(),
+      this.venueRepository.count()
+    ])
 
     return {
       items: venues.map(this.mapVenueEntityToVenue),
@@ -47,8 +53,8 @@ export class SearchService {
         city: entity.venue_city,
         country: entity.venue_country,
       },
-      latitude: entity.venue_latitude,
-      longitude: entity.venue_longitude,
+      latitude: entity.venue_latitude.toString(),
+      longitude: entity.venue_longitude.toString(),
       summary: entity.venue_summary,
       images: entity.venue_images ? JSON.parse(entity.venue_images) : [],
       currency: entity.venue_currency,
