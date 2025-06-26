@@ -1,0 +1,77 @@
+{
+  "project": {
+    "name": "Booking Journey Monorepo",
+    "type": "full-stack-application",
+    "architecture": "microservices",
+    "primary_language": "typescript",
+    "frameworks": ["nestjs", "react", "nx"],
+    "database": "postgresql",
+    "cache": "redis"
+  },
+  "structure": {
+    "monorepo_tool": "nx",
+    "backend_services": [
+      {
+        "name": "api-gateway",
+        "port": 3000,
+        "purpose": "Main API gateway and routing"
+      },
+      {
+        "name": "search-service",
+        "port": 3001,
+        "purpose": "Venue search with geolocation"
+      },
+      {
+        "name": "availability-service",
+        "port": 3002,
+        "purpose": "Room and package availability"
+      },
+      {
+        "name": "content-service",
+        "port": 3003,
+        "purpose": "Venue details and content"
+      },
+      {
+        "name": "order-service",
+        "port": 3004,
+        "purpose": "Booking orders and messaging"
+      },
+      {
+        "name": "customer-service",
+        "port": 3005,
+        "purpose": "Customer management"
+      }
+    ],
+    "frontend": {
+      "name": "frontend",
+      "port": 4200,
+      "framework": "react",
+      "ui_library": "shadcn/ui"
+    }
+  },
+  "api_endpoints": {
+    "total": 16,
+    "categories": {
+      "search_content": 4,
+      "availability": 6,
+      "orders": 5,
+      "customers": 1
+    }
+  },
+  "database_schema": {
+    "primary_tables": ["venues", "rooms", "packages", "addons", "customers", "orders", "order_items", "order_messages"]
+  },
+  "development": {
+    "package_manager": "npm",
+    "containerization": "docker-compose",
+    "testing": {
+      "unit": "jest",
+      "e2e": "playwright"
+    },
+    "documentation": "swagger"
+  },
+  "ai_assistance": {
+    "context_files": ["llm.txt", ".cursorrules", "docs/ai-development-guide.md"],
+    "patterns": ["microservices", "repository_pattern", "dto_pattern", "error_handling"]
+  }
+}

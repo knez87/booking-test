@@ -1,0 +1,184 @@
+# Cursor Rules for Booking Journey Monorepo
+
+## Project Context
+This is a NestJS microservices monorepo with React frontend for a meeting venue booking system. Follow these rules when working with the codebase.
+
+## Code Style & Conventions
+
+### File Naming
+- Use kebab-case for all file names: `venue-details.component.tsx`
+- Use PascalCase for class names: `VenueDetailsComponent`
+- Use camelCase for variables and functions: `venueDetails`
+- Use SCREAMING_SNAKE_CASE for constants: `API_BASE_URL`
+
+### TypeScript
+- Always use TypeScript strict mode
+- Import types with `import type` when possible
+- Use shared types from `@booking-journey/shared/types`
+- Define interfaces for all API responses and requests
+- Use proper generic types for database entities
+
+### NestJS Backend Patterns
+- Use dependency injection for all services
+- Implement proper error handling with try-catch blocks
+- Use class-validator for request validation
+- Follow the controller -> service -> repository pattern
+- Use TypeORM entities with proper decorators
+- Implement Swagger documentation for all endpoints
+
+### React Frontend Patterns
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use React Query for API state management
+- Follow the container/component pattern
+- Use shadcn/ui components when possible
+- Implement proper loading and error states
+
+### Database
+- Use TypeORM entities with proper relationships
+- Implement database migrations for schema changes
+- Use proper indexing for search fields
+- Follow PostgreSQL naming conventions
+- Use transactions for complex operations
+
+## Architecture Rules
+
+### Microservices
+- Each service should have a single responsibility
+- Services communicate via TCP transport
+- Use message patterns for inter-service communication
+- Implement proper health checks
+- Handle service failures gracefully
+
+### API Design
+- Follow RESTful conventions
+- Use proper HTTP status codes
+- Implement consistent error response format
+- Use pagination for list endpoints
+- Validate all input parameters
+
+### Security
+- Validate all inputs
+- Use parameterized queries to prevent SQL injection
+- Implement proper authentication and authorization
+- Sanitize user inputs
+- Use HTTPS in production
+
+## Development Workflow
+
+### Adding New Features
+1. Define shared types in `libs/shared/types`
+2. Create database entities with proper relationships
+3. Implement service layer with business logic
+4. Create controller with proper validation
+5. Add Swagger documentation
+6. Write unit tests
+7. Update frontend components
+8. Add E2E tests
+
+### Database Changes
+1. Create TypeORM migration
+2. Update entity definitions
+3. Update seed data if necessary
+4. Test migration rollback
+5. Update related services
+
+### API Changes
+1. Update OpenAPI specification
+2. Update shared types
+3. Implement backend changes
+4. Update frontend API calls
+5. Update documentation
+
+## Testing Guidelines
+
+### Unit Tests
+- Test all service methods
+- Mock external dependencies
+- Test error scenarios
+- Aim for 80%+ code coverage
+
+### E2E Tests
+- Test complete user journeys
+- Test error scenarios
+- Test responsive design
+- Use Page Object Model pattern
+
+### API Tests
+- Test all endpoints
+- Test validation rules
+- Test authentication
+- Test error responses
+
+## Performance Guidelines
+
+### Backend
+- Use database indexing for search fields
+- Implement caching with Redis
+- Use connection pooling
+- Optimize database queries
+- Implement pagination
+
+### Frontend
+- Use React.memo for expensive components
+- Implement virtual scrolling for large lists
+- Optimize bundle size
+- Use lazy loading
+- Implement proper caching
+
+## Error Handling
+
+### Backend
+- Use proper HTTP status codes
+- Return consistent error format
+- Log errors with correlation IDs
+- Handle database connection errors
+- Implement circuit breakers
+
+### Frontend
+- Use error boundaries
+- Show user-friendly error messages
+- Implement retry mechanisms
+- Handle network errors
+- Log errors for debugging
+
+## Documentation
+
+### Code Documentation
+- Use JSDoc for complex functions
+- Document API endpoints with Swagger
+- Keep README files updated
+- Document environment variables
+- Explain complex business logic
+
+### API Documentation
+- Use Swagger decorators
+- Provide example requests/responses
+- Document error scenarios
+- Include authentication requirements
+- Keep OpenAPI spec updated
+
+## Common Patterns
+
+### Service Implementation
+```typescript
+@Injectable()
+export class VenueService {
+  constructor(
+    @InjectRepository(VenueEntity)
+    private readonly venueRepository: Repository<VenueEntity>,
+  ) {}
+
+  async findById(id: number): Promise<Venue> {
+    try {
+      const venue = await this.venueRepository.findOne({ where: { id } });
+      if (!venue) {
+        throw new NotFoundException('Venue not found');
+      }
+      return this.mapEntityToDto(venue);
+    } catch (error) {
+      this.logger.error(`Error finding venue ${id}:`, error);
+      throw error;
+    }
+  }
+}
