@@ -17,6 +17,12 @@ import type {
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3000/api"
 
+interface ApiErrorResponse {
+  message: string
+  statusCode: number
+  error?: string
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -24,6 +30,16 @@ const api = axios.create({
     "X-API-KEY": process.env.REACT_APP_API_KEY || "demo-api-key",
   },
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message)
+    }
+    throw new Error("An unexpected error occurred")
+  },
+)
 
 // Search API
 export const searchVenues = async (params: VenueSearchParams): Promise<PaginatedResponse<Venue>> => {
@@ -57,8 +73,13 @@ export const getVenueDetails = async (id: number, lang?: string): Promise<Venue>
 }
 
 export const getVenueAddons = async (id: number, params?: any): Promise<Addon[]> => {
-  const response = await api.get(`/venues/${id}/addons`, { params })
-  return response.data
+  try {
+    const response = await api.get(`/venues/${id}/addons`, { params })
+    return response.data || []
+  } catch (error) {
+    console.error("Failed to fetch venue addons:", error)
+    return []
+  }
 }
 
 // Customer API
