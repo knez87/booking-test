@@ -1,72 +1,98 @@
-# Booking Journey Monorepo - LLM Context
+# Booking Journey Monorepo - AI Context
 
 ## Project Overview
-This is a full-stack booking journey application built with NestJS microservices architecture and React frontend, based on the MeetingPackage.com API specification. The system allows users to search for meeting venues, view availability, and make bookings.
+
+This is a full-stack booking journey application built with a microservices architecture using NestJS for the backend and React for the frontend. The application allows users to search for meeting venues, check availability, and book rooms or packages.
 
 ## Architecture
-- **Monorepo Structure**: Nx-based monorepo with multiple applications and shared libraries
-- **Backend**: NestJS microservices with TCP transport
-- **Frontend**: React with TypeScript, Tailwind CSS, and shadcn/ui components
-- **Database**: PostgreSQL as primary database
-- **Caching**: Redis for performance optimization
-- **Containerization**: Docker with Docker Compose for development and deployment
 
-## Core Services
-1. **API Gateway** (Port 3000) - Routes requests to microservices, Swagger documentation
-2. **Search Service** (Port 3001) - Venue search with geolocation
-3. **Availability Service** (Port 3002) - Room and package availability checking
-4. **Content Service** (Port 3003) - Venue details, rooms, and addons
-5. **Order Service** (Port 3004) - Booking orders and messaging
-6. **Customer Service** (Port 3005) - Customer management
+### Frontend (React SPA)
+- Single Page Application built with React, React Router, and React Query
+- State management using React Context API
+- UI components styled with Tailwind CSS
+- Smooth page transitions and loading states for enhanced UX
+- Responsive design for all device sizes
 
-## API Endpoints (16 total)
-### Search & Content
-- GET /api/venues - Search venues by location
-- GET /api/venues/{id} - Get venue details
-- GET /api/venues/{id}/addons - Get venue addons
-- GET /api/rooms/{id} - Get room details
+### Backend (NestJS Microservices)
+- API Gateway: Entry point for all client requests
+- Search Service: Handles venue search functionality
+- Availability Service: Manages room and package availability
+- Content Service: Provides venue details, rooms, and content
+- Order Service: Handles booking orders and reservations
+- Customer Service: Manages customer data and profiles
 
-### Availability
-- GET /api/availability/venues - Search available venues
-- GET /api/availability/venues/{id} - Get venue room availability
-- GET /api/availability/venues/{id}/packages - Get venue package availability
-- GET /api/availability/venues/{id}/day - Get day availability
-- GET /api/availability/meetingrooms/{id} - Get meeting room availability
-- GET /api/availability/packages/{id} - Get package availability
+### Database
+- PostgreSQL for persistent storage
+- Redis for caching
 
-### Orders
-- POST /api/orders - Create new order
-- GET /api/orders/{id} - Get order details
-- PUT /api/orders/{id} - Update order status
-- GET /api/orders/{id}/messages - Get order messages
-- POST /api/orders/{id}/messages - Send order message
+## Key Concepts
 
-### Customers
-- POST /api/customers - Create new customer
+### Booking Flow
+1. User searches for venues based on location, date, time, and number of delegates
+2. User selects a venue and views available rooms or packages
+3. User selects a room or package and adds optional services
+4. User provides customer details
+5. User completes payment
+6. User receives booking confirmation
 
-## Database Schema (PostgreSQL)
-### Core Tables
-- **venues** - Meeting venues and event spaces
-- **rooms** - Meeting rooms within venues
-- **packages** - Event packages offered by venues
-- **addons** - Additional services and products
-- **customers** - Customer profiles and information
-- **orders** - Booking orders and reservations
-- **order_items** - Order line items
-- **order_messages** - Order communication
+### Data Models
 
-## Key Technologies
-- **Backend**: NestJS, TypeORM, PostgreSQL, Redis, Swagger
-- **Frontend**: React 18, TypeScript, Tailwind CSS, shadcn/ui, React Query, React Router
-- **Testing**: Jest (unit), Playwright (E2E)
-- **DevOps**: Docker, Docker Compose, Nx build system
-- **Communication**: TCP microservices, REST API
+#### Venue
+- Basic information about meeting venues
+- Location data (address, coordinates)
+- Facilities and amenities
+- Images and descriptions
 
-## Development Patterns
-- **Microservices**: Each service has its own database entities and business logic
-- **Shared Types**: Common TypeScript interfaces in libs/shared/types
-- **Error Handling**: Consistent error responses across all services
-- **Validation**: Class-validator for request validation
-- **Documentation**: Swagger/OpenAPI for API documentation
+#### Room
+- Room details (name, capacity, dimensions)
+- Equipment and facilities
+- Pricing information
+- Availability constraints
 
-## File Structure
+#### Package
+- Package details (name, description)
+- Included rooms and services
+- Pricing information
+- Availability constraints
+
+#### Order
+- Customer information
+- Selected room or package
+- Additional services
+- Payment details
+- Status information
+
+## Development Guidelines
+
+### Frontend
+- Use React functional components with hooks
+- Implement proper loading states and error handling
+- Follow the existing page transition patterns
+- Maintain responsive design across all components
+- Use React Query for data fetching and caching
+- Follow the established folder structure
+
+### Backend
+- Follow NestJS module structure
+- Implement proper validation and error handling
+- Use DTOs for request/response contracts
+- Follow RESTful API design principles
+- Implement proper logging and monitoring
+
+## Testing Strategy
+
+### Frontend
+- Unit tests for components and hooks
+- Integration tests for pages
+- E2E tests for critical user flows
+
+### Backend
+- Unit tests for services and controllers
+- Integration tests for API endpoints
+- E2E tests for microservice communication
+
+## Deployment
+
+- Docker containers for all services
+- Kubernetes for orchestration
+- CI/CD pipeline for automated testing and deployment
