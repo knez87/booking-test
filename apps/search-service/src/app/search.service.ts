@@ -1,41 +1,60 @@
 import { Injectable } from "@nestjs/common"
-import { InjectRepository } from "@nestjs/typeorm"
-import { Repository } from "typeorm"
-import { VenueEntity } from "./entities/venue.entity"
+import { prisma } from "@booking-journey/shared/database"
 import type { VenueSearchParams, Venue, PaginatedResponse } from "@booking-journey/shared/types"
 
 @Injectable()
 export class SearchService {
-  constructor(
-    private readonly venueRepository: Repository<VenueEntity>,
-  ) {}
-
   async searchVenues(params: VenueSearchParams): Promise<PaginatedResponse<Venue>> {
-    const { lat, lng, radius = 5000, limit = 20, offset = 0 } = params
+    const { lat, lng, radius = 5000, limit = 20, offset = 0, delegates } = params
 
-    // Convert lat/lng to numbers for calculation
     const latitude = Number.parseFloat(lat)
     const longitude = Number.parseFloat(lng)
 
-    // Using Haversine formula for distance calculation in PostgreSQL
-    const query = this.venueRepository
-      .createQueryBuilder("venue")
-      .select([
-        "venue.*",
-        `(6371 * acos(cos(radians(${latitude})) * cos(radians(venue.latitude)) * cos(radians(venue.longitude) - radians(${longitude})) + sin(radians(${latitude})) * sin(radians(venue.latitude)))) * 1000 AS distance`,
-      ])
-      .having("distance <= :radius", { radius })
-      .orderBy("distance", "ASC")
-      .limit(limit)
-      .offset(offset)
+    // Use Prisma's raw query for geospatial search with Haversine formula
+    const venues = await prisma.$queryRaw<any[]>`
+      SELECT 
+        v.*,
+        (6371 * acos(
+          cos(radians(${latitude})) * 
+          cos(radians(CAST(v.latitude AS FLOAT))) * 
+          cos(radians(CAST(v.longitude AS FLOAT)) - radians(${longitude})) + 
+          sin(radians(${latitude})) * 
+          sin(radians(CAST(v.latitude AS FLOAT)))
+        )) * 1000 AS distance
+      FROM venues v
+      WHERE 
+        (${delegates}::int IS NULL OR v.max_delegates >= ${delegates}::int)
+        AND (6371 * acos(
+          cos(radians(${latitude})) * 
+          cos(radians(CAST(v.latitude AS FLOAT))) * 
+          cos(radians(CAST(v.longitude AS FLOAT)) - radians(${longitude})) + 
+          sin(radians(${latitude})) * 
+          sin(radians(CAST(v.latitude AS FLOAT)))
+        )) * 1000 <= ${radius}
+      ORDER BY distance ASC
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `
 
-    const [venues, total] = await Promise.all([
-      query.getRawMany(),
-      this.venueRepository.count()
-    ])
+    // Get total count for pagination
+    const totalCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count
+      FROM venues v
+      WHERE 
+        (${delegates}::int IS NULL OR v.max_delegates >= ${delegates}::int)
+        AND (6371 * acos(
+          cos(radians(${latitude})) * 
+          cos(radians(CAST(v.latitude AS FLOAT))) * 
+          cos(radians(CAST(v.longitude AS FLOAT)) - radians(${longitude})) + 
+          sin(radians(${latitude})) * 
+          sin(radians(CAST(v.latitude AS FLOAT)))
+        )) * 1000 <= ${radius}
+    `
+
+    const total = Number(totalCount[0].count)
 
     return {
-      items: venues.map(this.mapVenueEntityToVenue),
+      items: venues.map(this.mapVenueToResponse),
       results: venues.length,
       total_results: total,
       offset,
@@ -43,23 +62,58 @@ export class SearchService {
     }
   }
 
-  private mapVenueEntityToVenue(entity: any): Venue {
-    return {
-      id: entity.venue_id,
-      name: entity.venue_name,
-      address: {
-        street: entity.venue_street,
-        postal_code: entity.venue_postal_code,
-        city: entity.venue_city,
-        country: entity.venue_country,
+  async searchVenuesByText(query: string, limit = 20, offset = 0): Promise<PaginatedResponse<Venue>> {
+    const venues = await prisma.venue.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { summary: { contains: query, mode: "insensitive" } },
+          { city: { contains: query, mode: "insensitive" } },
+          { country: { contains: query, mode: "insensitive" } },
+        ],
       },
-      latitude: entity.venue_latitude.toString(),
-      longitude: entity.venue_longitude.toString(),
-      summary: entity.venue_summary,
-      images: entity.venue_images ? JSON.parse(entity.venue_images) : [],
-      currency: entity.venue_currency,
-      max_delegates: entity.venue_max_delegates,
-      starting_price_cents: entity.venue_starting_price_cents,
+      take: limit,
+      skip: offset,
+      orderBy: { name: "asc" },
+    })
+
+    const total = await prisma.venue.count({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { summary: { contains: query, mode: "insensitive" } },
+          { city: { contains: query, mode: "insensitive" } },
+          { country: { contains: query, mode: "insensitive" } },
+        ],
+      },
+    })
+
+    return {
+      items: venues.map(this.mapVenueToResponse),
+      results: venues.length,
+      total_results: total,
+      offset,
+      limit,
+    }
+  }
+
+  private mapVenueToResponse(venue: any): Venue {
+    return {
+      id: venue.id,
+      name: venue.name,
+      address: {
+        street: venue.street,
+        postal_code: venue.postal_code,
+        city: venue.city,
+        country: venue.country,
+      },
+      latitude: venue.latitude.toString(),
+      longitude: venue.longitude.toString(),
+      summary: venue.summary,
+      images: venue.images || [],
+      currency: venue.currency,
+      max_delegates: venue.max_delegates,
+      starting_price_cents: venue.starting_price_cents,
     }
   }
 }

@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Venue {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  street               String
+  postal_code          String
+  city                 String
+  country              String
+  latitude             Decimal  @db.Decimal(10, 8)
+  longitude            Decimal  @db.Decimal(11, 8)
+  summary              String?
+  language_summary     Json?
+  images               Json?
+  currency             String
+  max_delegates        Int?
+  starting_price_cents Int?
+  facilities           Json?
+  nearby               Json?
+  additionals          Json?
+  sports               Json?
+  package_addon        Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  rooms    Room[]
+  packages Package[]
+  addons   Addon[]
+
+  @@map("venues")
+  @@index([latitude, longitude], name: "idx_venue_location")
+  @@index([city, country], name: "idx_venue_city_country")
+  @@index([max_delegates], name: "idx_venue_max_delegates")
+}
+
+model Room {
+  id                    Int     @id @default(autoincrement())
+  venue_id              Int
+  name                  String
+  min_delegates         Int
+  max_delegates         Int
+  instant_bookable      Boolean @default(false)
+  credit_card_required  Boolean @default(false)
+  description           String?
+  images                Json?
+  equipments            Json?
+  layouts               Json?
+  dimensions            Json?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  // Relations
+  venue  Venue   @relation(fields: [venue_id], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("rooms")
+  @@index([venue_id], name: "idx_room_venue")
+  @@index([min_delegates, max_delegates], name: "idx_room_delegates")
+}
+
+model Package {
+  id            Int      @id @default(autoincrement())
+  venue_id      Int
+  name          String
+  min_delegates Int
+  max_delegates Int
+  rooms         Json?
+  info          String?
+  includes      Json?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  venue Venue @relation(fields: [venue_id], references: [id], onDelete: Cascade)
+
+  @@map("packages")
+  @@index([venue_id], name: "idx_package_venue")
+  @@index([min_delegates, max_delegates], name: "idx_package_delegates")
+}
+
+model Addon {
+  id                  Int     @id @default(autoincrement())
+  venue_id            Int
+  description         String
+  category            String
+  currency            String
+  amount              Decimal @db.Decimal(10, 2)
+  amount_inc_tax      Decimal @db.Decimal(10, 2)
+  unit                String
+  available_rooms     Json?
+  package_addon       Boolean @default(false)
+  available_packages  Json?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  // Relations
+  venue       Venue       @relation(fields: [venue_id], references: [id], onDelete: Cascade)
+  order_items OrderItem[]
+
+  @@map("addons")
+  @@index([venue_id], name: "idx_addon_venue")
+  @@index([category], name: "idx_addon_category")
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  first_name      String
+  last_name       String
+  email           String   @unique
+  company         String?
+  phone           String?
+  billing_address Json?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@map("customers")
+  @@index([email], name: "idx_customer_email")
+}
+
+model Order {
+  id                     Int       @id @default(autoincrement())
+  availability_id        String
+  customer_id            Int
+  booking_reference      String    @unique
+  status                 String
+  layout                 String?
+  room_id                Int?
+  additional_notes       String?
+  host_name              String?
+  event_name             String?
+  discount_code          String?
+  currency               String?
+  amount_inc_tax         Decimal?  @db.Decimal(10, 2)
+  provisional_hold_date  DateTime?
+  start_date             DateTime?
+  end_date               DateTime?
+  delegates              Int?
+  rooms                  Json?
+  created_date           DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+
+  // Relations
+  customer Customer     @relation(fields: [customer_id], references: [id])
+  room     Room?        @relation(fields: [room_id], references: [id])
+  items    OrderItem[]
+  messages OrderMessage[]
+
+  @@map("orders")
+  @@index([customer_id], name: "idx_order_customer")
+  @@index([booking_reference], name: "idx_order_booking_ref")
+  @@index([status], name: "idx_order_status")
+  @@index([start_date, end_date], name: "idx_order_dates")
+}
+
+model OrderItem {
+  id                   Int     @id @default(autoincrement())
+  order_id             Int
+  addon_id             Int?
+  name                 String
+  product              String
+  quantity             Int
+  start_time           String?
+  end_time             String?
+  account_category     String?
+  unit                 String
+  unit_price           Decimal @db.Decimal(10, 2)
+  unit_price_inc_tax   Decimal @db.Decimal(10, 2)
+  amount               Decimal @db.Decimal(10, 2)
+  amount_inc_tax       Decimal @db.Decimal(10, 2)
+  is_package_content   Boolean @default(false)
+  created_at           DateTime @default(now())
+
+  // Relations
+  order Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  addon Addon? @relation(fields: [addon_id], references: [id])
+
+  @@map("order_items")
+  @@index([order_id], name: "idx_order_item_order")
+}
+
+model OrderMessage {
+  id         Int      @id @default(autoincrement())
+  order_id   Int
+  message    String
+  sender     String
+  created_at DateTime @default(now())
+
+  // Relations
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("order_messages")
+  @@index([order_id], name: "idx_order_message_order")
+}
