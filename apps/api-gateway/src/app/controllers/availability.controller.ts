@@ -61,4 +61,24 @@ export class AvailabilityController {
   ): Promise<{ id: number; availability: string }[]> {
     return this.availabilityService.send("availability.venue.day", { id, date }).toPromise()
   }
+
+  @Get("meetingrooms/:id")
+  @ApiOperation({ summary: "Get meeting room availability" })
+  @ApiParam({ name: "id", description: "Room ID" })
+  @ApiResponse({ status: 200, description: "Room availability" })
+  async getMeetingRoomAvailability(@Param('id') id: number, @Query() params: any): Promise<AvailableRoom> {
+    return this.availabilityService.send("availability.meetingroom", { id, ...params }).toPromise()
+  }
+
+  @Get("packages/:id")
+  @ApiOperation({ summary: "Get package availability" })
+  @ApiParam({ name: "id", description: "Package ID" })
+  @ApiResponse({ status: 200, description: "Package availability" })
+  async getPackageAvailability(
+    @Param('id') id: number,
+    @Query() params: RoomAvailabilityParams,
+  ): Promise<AvailablePackage> {
+    return this.availabilityService.send("availability.package", { id, ...params }).toPromise()
+  }
 }
+</merged_code>
