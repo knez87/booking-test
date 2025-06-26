@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "npmScope": "booking-journey",
+  "affected": {
+    "defaultBase": "origin/main"
+  },
+  "cli": {
+    "packageManager": "npm"
+  },
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "babel": true
+      }
+    },
+    "@nx/nest": {
+      "application": {
+        "linter": "eslint"
+      }
+    }
+  },
+  "defaultProject": "frontend"
+}

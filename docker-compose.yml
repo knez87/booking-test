@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: booking_journey
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - SEARCH_SERVICE_HOST=search-service
+      - SEARCH_SERVICE_PORT=3001
+      - AVAILABILITY_SERVICE_HOST=availability-service
+      - AVAILABILITY_SERVICE_PORT=3002
+      - CONTENT_SERVICE_HOST=content-service
+      - CONTENT_SERVICE_PORT=3003
+      - ORDER_SERVICE_HOST=order-service
+      - ORDER_SERVICE_PORT=3004
+      - CUSTOMER_SERVICE_HOST=customer-service
+      - CUSTOMER_SERVICE_PORT=3005
+    depends_on:
+      - postgres
+      - redis
+      - search-service
+      - availability-service
+      - content-service
+      - order-service
+      - customer-service
+
+  # Search Service
+  search-service:
+    build:
+      context: .
+      dockerfile: apps/search-service/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=booking_journey
+    depends_on:
+      - postgres
+
+  # Availability Service
+  availability-service:
+    build:
+      context: .
+      dockerfile: apps/availability-service/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=booking_journey
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+
+  # Content Service
+  content-service:
+    build:
+      context: .
+      dockerfile: apps/content-service/Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=booking_journey
+    depends_on:
+      - postgres
+
+  # Order Service
+  order-service:
+    build:
+      context: .
+      dockerfile: apps/order-service/Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=booking_journey
+    depends_on:
+      - postgres
+
+  # Customer Service
+  customer-service:
+    build:
+      context: .
+      dockerfile: apps/customer-service/Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=booking_journey
+    depends_on:
+      - postgres
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000/api
+      - REACT_APP_API_KEY=demo-api-key
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
